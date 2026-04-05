@@ -1,12 +1,20 @@
 [
   {
     "name": "VS Code",
+    "tag": "Editor",
     "desc": "Online code editor.",
     "url": "aHR0cHM6Ly92c2NvZGUuZGV2"
   },
   {
+    "name": "Hoppscotch",
+    "tag": "API",
+    "desc": "Open source API tester.",
+    "url": "aHR0cHM6Ly9ob3Bwc2NvdGNoLmlv"
+  },
+  {
     "name": "GitHub",
-    "desc": "Source control.",
+    "tag": "Git",
+    "desc": "Cloud source control.",
     "url": "aHR0cHM6Ly9naXRodWIuY29t"
   }
 ]
