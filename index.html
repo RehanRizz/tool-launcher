@@ -2,20 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>DevHub Static Launcher</title>
+    <title>DevHub Launcher</title>
     <style>
         :root { --bg: #0d1117; --card: #161b22; --accent: #58a6ff; --text: #c9d1d9; --border: #30363d; --locked: #1c1616; }
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
         .container { width: 100%; max-width: 800px; }
         header { border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
-        
         .app-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
         .app-card { background: var(--card); border: 1px solid var(--border); padding: 20px; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.2s; }
         .app-card:hover { border-color: var(--accent); transform: translateY(-2px); }
-
         .vault-section { margin-top: 40px; padding: 20px; background: var(--locked); border: 1px solid #4a2b2b; border-radius: 8px; display: none; }
-        
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 100; }
         .modal-content { background: var(--card); padding: 30px; border-radius: 12px; width: 320px; border: 1px solid var(--border); text-align: center; }
         .btn { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 10px; }
         .btn-close { background: #30363d; margin-top: 8px; }
@@ -25,7 +22,7 @@
 
 <div class="container">
     <header>
-        <h1>DevHub <small style="color:var(--accent); font-size: 0.5em;">JSON-READ-ONLY</small></h1>
+        <h1>DevHub Launcher</h1>
         <button id="unlockBtn" onclick="unlockVault()" style="background:none; border:1px solid var(--border); color:var(--text); padding:5px 12px; border-radius:4px; cursor:pointer;">🔒 Unlock Vault</button>
     </header>
 
@@ -47,18 +44,13 @@
 </div>
 
 <script>
-    const CONFIG_FILE = 'modules.json';
-
+    // Load public apps on start
     async function init() {
         try {
-            const response = await fetch(CONFIG_FILE);
-            const data = await response.json();
-            
-            render(data.publicApps, 'publicGrid');
-            render(data.lockedApps, 'lockedGrid');
-        } catch (err) {
-            console.error("Could not load modules.json. Ensure you are using a local server.", err);
-        }
+            const res = await fetch('public.json');
+            const data = await res.json();
+            render(data, 'publicGrid');
+        } catch (e) { console.error("Error loading public.json", e); }
     }
 
     function render(apps, containerId) {
@@ -75,26 +67,29 @@
     function openModal(app) {
         document.getElementById('mTitle').innerText = app.name;
         document.getElementById('mDesc').innerText = app.desc;
-        document.getElementById('mLaunch').onclick = () => window.open(app.url, '_blank');
+        // Obfuscation: Decode the URL only at launch
+        document.getElementById('mLaunch').onclick = () => window.open(atob(app.url), '_blank');
         document.getElementById('appModal').style.display = 'flex';
     }
 
     function closeModal() { document.getElementById('appModal').style.display = 'none'; }
 
-    function unlockVault() {
+    async function unlockVault() {
         const code = prompt("Enter Access Code:");
-        if (code === "1234") {
-            document.getElementById('vaultArea').style.display = 'block';
-            document.getElementById('unlockBtn').innerText = "🔓 Vault Open";
-        }
+        if (code === "1234") { // Change this to your preferred code
+            try {
+                const res = await fetch('locked.json');
+                const data = await res.json();
+                document.getElementById('lockedGrid').innerHTML = ''; // Clear previous
+                render(data, 'lockedGrid');
+                document.getElementById('vaultArea').style.display = 'block';
+                document.getElementById('unlockBtn').innerText = "🔓 Vault Open";
+            } catch (e) { alert("Error loading vault."); }
+        } else { alert("Invalid code."); }
     }
 
     window.onclick = (e) => { if(e.target.className === 'modal') closeModal(); }
     init();
-    window.onbeforeunload = function() {
-        return "SHUT UP GOGUARDIAN";
-    };
 </script>
-
 </body>
 </html>
