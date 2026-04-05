@@ -1,0 +1,12 @@
+[
+  {
+    "name": "VS Code",
+    "desc": "Online code editor.",
+    "url": "aHR0cHM6Ly92c2NvZGUuZGV2"
+  },
+  {
+    "name": "GitHub",
+    "desc": "Source control.",
+    "url": "aHR0cHM6Ly9naXRodWIuY29t"
+  }
+]
