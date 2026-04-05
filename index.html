@@ -2,36 +2,42 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>DevHub Launcher</title>
+    <title>DevHub Taggable Launcher</title>
     <style>
-        :root { --bg: #0d1117; --card: #161b22; --accent: #58a6ff; --text: #c9d1d9; --border: #30363d; --locked: #1c1616; }
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .container { width: 100%; max-width: 800px; }
-        header { border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
-        .app-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
+        :root { --bg: #0d1117; --card: #161b22; --accent: #58a6ff; --text: #c9d1d9; --border: #30363d; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .container { width: 100%; max-width: 900px; }
+        header { border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* Tabs Styling */
+        .tabs { display: flex; gap: 10px; margin-bottom: 25px; flex-wrap: wrap; }
+        .tab { padding: 8px 16px; background: var(--card); border: 1px solid var(--border); border-radius: 20px; cursor: pointer; color: #8b949e; font-size: 14px; transition: 0.2s; }
+        .tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+        .app-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
         .app-card { background: var(--card); border: 1px solid var(--border); padding: 20px; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.2s; }
         .app-card:hover { border-color: var(--accent); transform: translateY(-2px); }
-        .vault-section { margin-top: 40px; padding: 20px; background: var(--locked); border: 1px solid #4a2b2b; border-radius: 8px; display: none; }
+        .app-card[data-hidden="true"] { display: none; }
+
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 100; }
         .modal-content { background: var(--card); padding: 30px; border-radius: 12px; width: 320px; border: 1px solid var(--border); text-align: center; }
         .btn { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 10px; }
-        .btn-close { background: #30363d; margin-top: 8px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <h1>DevHub Launcher</h1>
+        <h1>DevHub</h1>
         <button id="unlockBtn" onclick="unlockVault()" style="background:none; border:1px solid var(--border); color:var(--text); padding:5px 12px; border-radius:4px; cursor:pointer;">🔒 Unlock Vault</button>
     </header>
 
-    <div id="publicGrid" class="app-grid"></div>
-
-    <div id="vaultArea" class="vault-section">
-        <h3 style="margin-top:0; color: #ff7b72;">Locked Modules</h3>
-        <div id="lockedGrid" class="app-grid"></div>
+    <!-- Dynamic Filter Tabs -->
+    <div id="tabList" class="tabs">
+        <div class="tab active" onclick="filterByTag('All')">All</div>
     </div>
+
+    <div id="mainGrid" class="app-grid"></div>
 </div>
 
 <div id="appModal" class="modal">
@@ -39,35 +45,68 @@
         <h2 id="mTitle"></h2>
         <p id="mDesc" style="color: #8b949e;"></p>
         <button class="btn" id="mLaunch">Launch App</button>
-        <button class="btn btn-close" onclick="closeModal()">Close</button>
+        <button class="btn" style="background:#30363d; margin-top:8px;" onclick="closeModal()">Close</button>
     </div>
 </div>
 
 <script>
-    // Load public apps on start
+    let allApps = [];
+
     async function init() {
-        try {
-            const res = await fetch('public.json');
-            const data = await res.json();
-            render(data, 'publicGrid');
-        } catch (e) { console.error("Error loading public.json", e); }
+        const res = await fetch('public.json');
+        const data = await res.json();
+        allApps = data;
+        updateUI();
     }
 
-    function render(apps, containerId) {
-        const grid = document.getElementById(containerId);
+    function updateUI() {
+        renderApps(allApps);
+        renderTabs();
+    }
+
+    function renderTabs() {
+        const tabList = document.getElementById('tabList');
+        const tags = new Set(['All']);
+        allApps.forEach(app => tags.add(app.tag));
+        
+        tabList.innerHTML = '';
+        tags.forEach(tag => {
+            const btn = document.createElement('div');
+            btn.className = 'tab';
+            btn.innerText = tag;
+            btn.onclick = (e) => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+                filterByTag(tag);
+            };
+            tabList.appendChild(btn);
+        });
+        tabList.firstChild.classList.add('active');
+    }
+
+    function renderApps(apps) {
+        const grid = document.getElementById('mainGrid');
+        grid.innerHTML = '';
         apps.forEach(app => {
             const card = document.createElement('div');
             card.className = 'app-card';
+            card.setAttribute('data-tag', app.tag);
             card.innerText = app.name;
             card.onclick = () => openModal(app);
             grid.appendChild(card);
         });
     }
 
+    function filterByTag(tag) {
+        const cards = document.querySelectorAll('.app-card');
+        cards.forEach(card => {
+            card.style.display = (tag === 'All' || card.getAttribute('data-tag') === tag) ? 'block' : 'none';
+        });
+    }
+
     function openModal(app) {
         document.getElementById('mTitle').innerText = app.name;
         document.getElementById('mDesc').innerText = app.desc;
-        // Obfuscation: Decode the URL only at launch
         document.getElementById('mLaunch').onclick = () => window.open(atob(app.url), '_blank');
         document.getElementById('appModal').style.display = 'flex';
     }
@@ -75,17 +114,15 @@
     function closeModal() { document.getElementById('appModal').style.display = 'none'; }
 
     async function unlockVault() {
-        const code = prompt("Enter Access Code:");
-        if (code === "1234") { // Change this to your preferred code
-            try {
-                const res = await fetch('locked.json');
-                const data = await res.json();
-                document.getElementById('lockedGrid').innerHTML = ''; // Clear previous
-                render(data, 'lockedGrid');
-                document.getElementById('vaultArea').style.display = 'block';
-                document.getElementById('unlockBtn').innerText = "🔓 Vault Open";
-            } catch (e) { alert("Error loading vault."); }
-        } else { alert("Invalid code."); }
+        const code = prompt("Code:");
+        if (code === "1234") {
+            const res = await fetch('locked.json');
+            const data = await res.json();
+            // Add locked apps to the global array and refresh
+            allApps = [...allApps, ...data];
+            updateUI();
+            document.getElementById('unlockBtn').innerText = "🔓 Vault Open";
+        }
     }
 
     window.onclick = (e) => { if(e.target.className === 'modal') closeModal(); }
