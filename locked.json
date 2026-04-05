@@ -1,7 +1,8 @@
 [
   {
-    "name": "AWS Console",
-    "desc": "Cloud Infrastructure.",
-    "url": "aHR0cHM6Ly9hd3MuYW1hem9uLmNvbQ=="
+    "name": "Production DB",
+    "tag": "Database",
+    "desc": "Live DB access.",
+    "url": "aHR0cHM6Ly9teXNxbC5jb20="
   }
 ]
